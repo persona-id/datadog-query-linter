@@ -1,0 +1,8 @@
+apiVersion: datadoghq.com/v1alpha1
+kind: DatadogMetric
+metadata:
+  name: temporal-retention-workflow-start-latency
+  namespace: web
+spec:
+  # This query will pass
+  query: default_zero(avg:rails.temporal.workflow_task.queue_time.avg{app:persona-web-temporal-worker-retention,env:production,region:us-central1,task_queue:retention}.fill(null))

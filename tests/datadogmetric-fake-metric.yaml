@@ -1,0 +1,8 @@
+apiVersion: datadoghq.com/v1alpha1
+kind: DatadogMetric
+metadata:
+  name: temporal-retention-workflow-start-latency
+  namespace: web
+spec:
+  # This query will pass validation, but return no data because it's a fake metric
+  query: avg:kuzmiks.cool.worker.queue_time.avg{app:fake-app,env:fake-env,region:fake-region,task_queue:fake-queue}
