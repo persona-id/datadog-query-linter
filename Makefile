@@ -37,9 +37,6 @@ run: build
 runfull: build
 	./$(TARGET) `find ../kubernetes/rendered -type f -name "datadogmetric-*"`
 
-docker: clean lint
-	@docker build -f build/dev.Dockerfile -t persona-id/datadog-query-linter:latest .
-
 snapshot: clean lint
 	@goreleaser --snapshot --clean
 
