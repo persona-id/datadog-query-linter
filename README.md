@@ -34,3 +34,14 @@ source ./.envrc
 
 make # or make test, make run, etc
 ```
+
+## Releasing a new version
+
+Use the normal PR process to get your code merged, and then cut a tag:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This will kick off a goreleaser build, and the docker image should show up in the repo shortly thereafter.
