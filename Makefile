@@ -42,3 +42,14 @@ snapshot: clean lint
 
 release: clean lint
 	@goreleaser --clean
+
+dockertest:
+	@echo $$(pwd)/tests
+	@docker container run --rm \
+		--user $$(id -u ${USER}):$$(id -g ${USER}) \
+		--volume $$(pwd)/tests:/tests \
+		--env DD_CLIENT_API_KEY=${DD_API_KEY} \
+		--env DD_CLIENT_APP_KEY=${DD_APP_KEY} \
+		ghcr.io/persona-id/datadog-query-linter:latest \
+		/usr/local/bin/datadog-query-linter \
+		$$(ls tests/*.yaml)
