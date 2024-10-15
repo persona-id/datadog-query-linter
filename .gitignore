@@ -16,4 +16,9 @@ go.work
 
 # Test coverage output and a temp directory
 /coverage
-/tmp
+/tmp.envrc
+
+# dont commit the envrc because it has persona-specific gcp values
+# in it. NOT any actual secrets though, of course, just gcp projects
+# and secret names.
+/.envrc

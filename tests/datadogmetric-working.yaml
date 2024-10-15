@@ -4,5 +4,7 @@ metadata:
   name: temporal-retention-workflow-start-latency
   namespace: web
 spec:
-  # This query will pass
+  # This query will pass because it isn't malformed. however, if the query isn't
+  # technically valid because the metric doesn't exist, it will still pass due to the
+  # default_zero() function. TODO: figure out a way around this.
   query: default_zero(avg:rails.temporal.workflow_task.queue_time.avg{app:persona-web-temporal-worker-retention,env:production,region:us-central1,task_queue:retention}.fill(null))

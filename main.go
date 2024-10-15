@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -13,6 +12,7 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
 	"github.com/lmittmann/tint"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
@@ -147,14 +147,14 @@ func setupLogger(logLevel string) {
 func extractQuery(filePath string) (string, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, fmt.Sprintf("Failed to read file: %s", filePath))
 	}
 
 	var metric DatadogMetricDefinition
 
 	err = yaml.Unmarshal(data, &metric)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, fmt.Sprintf("Failed to unmarshal yaml: %s", filePath))
 	}
 
 	return metric.Spec.Query, nil
@@ -198,8 +198,3 @@ func fetchMetric(ctx context.Context, api *datadogV1.MetricsApi, query string) (
 		}
 	}
 }
-
-// slog.Info("No data available or unexpected response format, but the query was valid",
-// 	// slog.String("file", file),
-// 	slog.String("query", query),
-// )

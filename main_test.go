@@ -24,7 +24,7 @@ func TestFileLoading(t *testing.T) {
 			t.Fatalf("Expected an error but didn't receive one.")
 		}
 
-		expectedErr := "open tests/datadogmetric-no-file.yaml: no such file or directory"
+		expectedErr := "Failed to read file: tests/datadogmetric-no-file.yaml: open tests/datadogmetric-no-file.yaml: no such file or directory"
 		if err.Error() != expectedErr {
 			t.Fatalf("Expected error string `%s` but got `%v`.", expectedErr, err)
 		}

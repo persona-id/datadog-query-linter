@@ -46,7 +46,4 @@ changelog:
 checksum:
   name_template: 'checksums.txt'
 
-snapshot:
-  name_template: "{{ incpatch .Version }}-next"
-
 report_sizes: true
