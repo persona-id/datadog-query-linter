@@ -1,9 +1,8 @@
 module github.com/persona-id/datadog-query-linter
 
 go 1.22.3
-
 require (
-	github.com/DataDog/datadog-api-client-go/v2 v2.35.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.36.1
 	github.com/lmittmann/tint v1.0.7
 	github.com/pkg/errors v0.9.1
 	gopkg.in/yaml.v2 v2.4.0
