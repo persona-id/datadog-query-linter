@@ -191,10 +191,10 @@ func fetchMetric(ctx context.Context, api *datadogV1.MetricsApi, query string) (
 			// Return the value of the latest datapoint in the time series.
 			value := *metricResp.Series[0].Pointlist[len(metricResp.Series[0].Pointlist)-1][1]
 			return datadog.NewNullableFloat64(&value), nil
-		} else {
-			// No time series was returned, so it's probably a metric without data or it doesn't exist.
-			//nolint:nilnil
-			return nil, nil
 		}
+
+		// No time series was returned, so it's probably a metric without data or it doesn't exist.
+		//nolint:nilnil
+		return nil, nil
 	}
 }
