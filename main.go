@@ -188,9 +188,12 @@ func fetchMetric(ctx context.Context, api *datadogV1.MetricsApi, query string) (
 		// The API call technically succeeded in that the query wasn't malformed.
 		// Note that this doesn't mean the metric is necessarily a real metric, just that the query succeeded.
 		if len(metricResp.Series) > 0 && metricResp.Series[0].End != nil {
-			// Return the value of the latest datapoint in the time series.
-			value := *metricResp.Series[0].Pointlist[len(metricResp.Series[0].Pointlist)-1][1]
-			return datadog.NewNullableFloat64(&value), nil
+			series := metricResp.Series[0]
+			if len(series.Pointlist) > 0 {
+				// Return the value of the latest datapoint in the time series.
+				lastestPoint := series.Pointlist[len(series.Pointlist)-1]
+				return datadog.NewNullableFloat64(lastestPoint[1]), nil
+			}
 		}
 
 		// No time series was returned, so it's probably a metric without data or it doesn't exist.
