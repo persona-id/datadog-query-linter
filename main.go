@@ -96,7 +96,7 @@ func main() {
 
 			failures++
 		} else {
-			if value == nil {
+			if value == nil || value.Get() == nil {
 				slog.Warn("Query returned no data; the metric might not be real or there may not be any datapoints",
 					slog.String("file", file),
 					slog.String("query", query),
