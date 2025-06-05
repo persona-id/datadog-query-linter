@@ -96,7 +96,7 @@ func main() {
 
 			failures++
 		} else {
-			if value == nil || value.Get() == nil {
+			if value == nil {
 				slog.Warn("Query returned no data; the metric might not be real or there may not be any datapoints",
 					slog.String("file", file),
 					slog.String("query", query),
@@ -105,7 +105,7 @@ func main() {
 				slog.Info("Query result",
 					slog.String("file", file),
 					slog.String("query", query),
-					slog.Float64("value", *value.Get()),
+					slog.Float64("value", *value),
 				)
 			}
 		}
@@ -161,7 +161,7 @@ func extractQuery(filePath string) (string, error) {
 }
 
 // Fetch the metric value for the specified query from the Datadog API, if possible.
-func fetchMetric(ctx context.Context, api *datadogV1.MetricsApi, query string) (*datadog.NullableFloat64, error) {
+func fetchMetric(ctx context.Context, api *datadogV1.MetricsApi, query string) (*float64, error) {
 	fiveMinAgo := time.Now().Add(-1 * time.Minute).Unix()
 	metricResp, httpResp, err := api.QueryMetrics(ctx, fiveMinAgo, time.Now().Unix(), query)
 
@@ -188,15 +188,17 @@ func fetchMetric(ctx context.Context, api *datadogV1.MetricsApi, query string) (
 		// The API call technically succeeded in that the query wasn't malformed.
 		// Note that this doesn't mean the metric is necessarily a real metric, just that the query succeeded.
 		if len(metricResp.Series) > 0 && metricResp.Series[0].End != nil {
+			// Return the latest non-null value in the time series.
 			series := metricResp.Series[0]
-			if len(series.Pointlist) > 0 {
-				// Return the value of the latest datapoint in the time series.
-				lastestPoint := series.Pointlist[len(series.Pointlist)-1]
-				return datadog.NewNullableFloat64(lastestPoint[1]), nil
+			for i := len(series.Pointlist) - 1; i >= 0; i-- {
+				point := series.Pointlist[i]
+				if point[1] != nil {
+					return point[1], nil
+				}
 			}
 		}
 
-		// No time series was returned, so it's probably a metric without data or it doesn't exist.
+		// No time series returned or all points were null. Probably a metric w/out data or it doesn't exist.
 		//nolint:nilnil
 		return nil, nil
 	}
