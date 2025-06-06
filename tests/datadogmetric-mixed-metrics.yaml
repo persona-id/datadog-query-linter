@@ -1,0 +1,6 @@
+apiVersion: argoproj.io/v1alpha1
+kind: DatadogMetric
+metadata:
+  name: test-mixed-metrics
+spec:
+  query: "default_zero(avg:valid.metric{tag:value}) * sum:another.metric{env:prod} / count:third.metric{*}"

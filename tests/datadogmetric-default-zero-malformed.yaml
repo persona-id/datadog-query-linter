@@ -1,0 +1,8 @@
+apiVersion: datadoghq.com/v1alpha1
+kind: DatadogMetric
+metadata:
+  name: default-zero-malformed-syntax
+  namespace: web
+spec:
+  # This query uses default_zero() with malformed syntax that should fail
+  query: default_zero(avg:metric.name{tag:value}.invalid_function_call())

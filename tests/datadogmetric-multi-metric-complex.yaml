@@ -1,0 +1,6 @@
+apiVersion: argoproj.io/v1alpha1
+kind: DatadogMetric
+metadata:
+  name: test-multi-metric-complex
+spec:
+  query: "(default_zero(default_zero(avg:deeply.nested.valid.metric1{fake:tag}))+default_zero(default_zero(avg:deeply.nested.valid.metric2{fake:tag})))/default_zero(avg:deeply.nested.valid.metric3{fake:tag})"
