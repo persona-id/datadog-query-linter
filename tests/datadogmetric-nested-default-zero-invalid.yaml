@@ -1,0 +1,8 @@
+apiVersion: datadoghq.com/v1alpha1
+kind: DatadogMetric
+metadata:
+  name: nested-default-zero-invalid-metric
+  namespace: web
+spec:
+  # This query uses nested default_zero() calls to mask an invalid metric
+  query: default_zero(default_zero(avg:deeply.nested.invalid.metric{fake:tag}))

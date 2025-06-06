@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
@@ -29,6 +31,67 @@ type MetricQueryError struct {
 
 func (e *MetricQueryError) Error() string {
 	return fmt.Sprintf("Error: %s", e.NestedError)
+}
+
+// QueryAnalysis contains information about a parsed query
+type QueryAnalysis struct {
+	OriginalQuery      string
+	HasDefaultZero     bool
+	InnerQuery         string
+	DefaultZeroNesting int
+}
+
+// parseQuery analyzes a Datadog query to detect default_zero() usage and extract inner queries
+func parseQuery(query string) *QueryAnalysis {
+	analysis := &QueryAnalysis{
+		OriginalQuery: query,
+	}
+
+	// Regular expression to match default_zero() function calls
+	// This handles nested parentheses properly
+	defaultZeroRegex := regexp.MustCompile(`^default_zero\s*\(`)
+
+	if !defaultZeroRegex.MatchString(strings.TrimSpace(query)) {
+		return analysis
+	}
+
+	analysis.HasDefaultZero = true
+
+	// Extract the inner query by finding matching parentheses
+	innerQuery, nesting := extractInnerQuery(query)
+	analysis.InnerQuery = innerQuery
+	analysis.DefaultZeroNesting = nesting
+
+	return analysis
+}
+
+// extractInnerQuery extracts the inner query from default_zero() function calls
+// Returns the inner query and the nesting level of default_zero calls
+func extractInnerQuery(query string) (string, int) {
+	trimmed := strings.TrimSpace(query)
+	nesting := 0
+
+	// Keep peeling off default_zero() layers
+	for {
+		defaultZeroRegex := regexp.MustCompile(`^default_zero\s*\((.+)\)$`)
+		matches := defaultZeroRegex.FindStringSubmatch(trimmed)
+
+		if len(matches) != 2 {
+			break
+		}
+
+		nesting++
+		inner := strings.TrimSpace(matches[1])
+
+		// Check if the inner content is another default_zero call
+		if !strings.HasPrefix(inner, "default_zero") {
+			return inner, nesting
+		}
+
+		trimmed = inner
+	}
+
+	return trimmed, nesting
 }
 
 func main() {
@@ -82,6 +145,10 @@ func main() {
 			continue
 		}
 
+		// Analyze the query to detect default_zero usage
+		analysis := parseQuery(query)
+
+		// Always validate the original query first
 		value, err := fetchMetric(ctx, api, query)
 
 		var mqe *MetricQueryError
@@ -95,19 +162,57 @@ func main() {
 			}
 
 			failures++
-		} else {
-			if value == nil {
-				slog.Warn("Query returned no data; the metric might not be real or there may not be any datapoints",
-					slog.String("file", file),
-					slog.String("query", query),
-				)
-			} else {
-				slog.Info("Query result",
-					slog.String("file", file),
-					slog.String("query", query),
-					slog.Float64("value", *value),
-				)
+			continue
+		}
+
+		// If the original query has default_zero, we need additional validation
+		if analysis.HasDefaultZero {
+			slog.Debug("Query uses default_zero, validating inner query",
+				slog.String("file", file),
+				slog.String("original_query", analysis.OriginalQuery),
+				slog.String("inner_query", analysis.InnerQuery),
+				slog.Int("nesting_level", analysis.DefaultZeroNesting),
+			)
+
+			// Test the inner query without default_zero to see if it's actually valid
+			innerValue, innerErr := fetchMetric(ctx, api, analysis.InnerQuery)
+
+			if innerErr != nil {
+				var innerMqe *MetricQueryError
+				if errors.As(innerErr, &innerMqe) {
+					slog.Error("Inner query validation failed - default_zero() is masking an invalid metric",
+						slog.String("file", file),
+						slog.String("original_query", analysis.OriginalQuery),
+						slog.String("inner_query", analysis.InnerQuery),
+						slog.Any("err", innerMqe.NestedError),
+					)
+					failures++
+					continue
+				}
 			}
+
+			// Check if inner query returns no data (potential invalid metric)
+			if innerValue == nil {
+				slog.Warn("Inner query returns no data - metric may not exist but default_zero() masks this",
+					slog.String("file", file),
+					slog.String("original_query", analysis.OriginalQuery),
+					slog.String("inner_query", analysis.InnerQuery),
+				)
+				// This is a warning, not a hard failure, as the metric might legitimately have no current data
+			}
+		}
+
+		if value == nil {
+			slog.Warn("Query returned no data; the metric might not be real or there may not be any datapoints",
+				slog.String("file", file),
+				slog.String("query", query),
+			)
+		} else {
+			slog.Info("Query result",
+				slog.String("file", file),
+				slog.String("query", query),
+				slog.Float64("value", *value),
+			)
 		}
 	}
 

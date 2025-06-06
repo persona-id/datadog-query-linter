@@ -1,0 +1,8 @@
+apiVersion: datadoghq.com/v1alpha1
+kind: DatadogMetric
+metadata:
+  name: default-zero-invalid-metric
+  namespace: web
+spec:
+  # This query uses default_zero() to mask an invalid metric that should fail linting
+  query: default_zero(avg:completely.invalid.metric.name{nonexistent:tag,invalid:filter})

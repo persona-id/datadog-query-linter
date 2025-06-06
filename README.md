@@ -21,6 +21,23 @@ You can also use `find` to get said files:
 ./datadog-query-linter `find ../kubernetes/rendered -type f -name "datadogmetric-*"`
 ```
 
+## Enhanced default_zero() Validation
+
+**New Feature**: The linter now detects when `default_zero()` is used to mask invalid metrics and fails appropriately.
+
+### Problem Solved
+Previously, queries wrapped in `default_zero()` would pass validation even when the inner metric was invalid, because `default_zero()` masks errors by returning 0. This created a blind spot where invalid metrics could pass CI checks.
+
+### Solution
+The enhanced linter now:
+- Detects `default_zero()` usage in queries
+- Extracts and validates inner queries separately  
+- Fails when `default_zero()` masks invalid metrics or syntax errors
+- Supports nested `default_zero()` calls
+- Provides detailed logging about what was detected
+
+See `ENHANCEMENT.md` for detailed technical information.
+
 ## Development
 
 Clone the repo and it should just be ready to go. The Makefile has some assumptions about location of code (like it assume the k8s repo is in the parent directory), but otherwise it should work fine.
